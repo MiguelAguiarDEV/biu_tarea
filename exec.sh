@@ -4,8 +4,8 @@
 DB_USER="root"
 DB_PASS="root"
 DB_HOST="192.168.216.120"
-DB_PORT="3307"
-DB_NAME="MovieBind"
+DB_PORT="3306"
+DB_NAME="moviebind"
 VENV_DIR=".venv"
 HDFS_PATH="/user/hadoop/data"
 
@@ -35,11 +35,6 @@ setupEnv() {
     if [ -f "requirements.txt" ]; then
         echo "Instalando dependencias desde requirements.txt..."
         pip install -r requirements.txt
-        wget http://archive.apache.org/dist/avro/avro-1.10.2/java/avro-tools-1.10.2.jar \
-            -O avro-tools.jar
-        wget https://repo1.maven.org/maven2/org/apache/parquet/parquet-tools/1.12.3/parquet-tools-1.12.3.jar
-        java -cp parquet-tools-1.11.1.jar:/opt/hadoop/share/hadoop/common/hadoop-common-3.3.6.jar:/opt/hadoop/share/hadoop/common/lib/*:/opt/hadoop/share/hadoop/mapreduce/hadoop-mapreduce-client-core-3.3.6.jar \
-            org.apache.parquet.tools.Main cat 59feddf9-8253-448a-b08c-a56b74eb68c0.parquet
     else
         echo "Archivo requirements.txt no encontrado. No se instalaron dependencias."
     fi
