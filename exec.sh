@@ -46,7 +46,19 @@ setupEnv() {
     echo "Entorno virtual configurado."
 }
 
+testDB() {
+    echo "Probando la conexión a la base de datos..."
 
+    # Conectar a la base de datos
+    mariadb -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASS -e "USE $DB_NAME;"
+
+    # Verifica si la conexión fue exitosa
+    if [ $? -eq 0 ]; then
+        echo "Conexión exitosa a la base de datos '$database' en $host:$port"
+    else
+        echo "Error al conectar a la base de datos '$database' en $host:$port"
+    fi
+}
 
 # Done
 createDB() {
@@ -69,8 +81,7 @@ deleteDB() {
     echo "Base de datos borrada."
 }
 
-
-importData() {
+import() {
     read -p "Introduce el nombre de la tabla que deseas importar: " table
     echo "Importando datos de la tabla '$table' a HDFS..."
     sqoop import --connect jdbc:mariadb://$DB_HOST:$DB_PORT/$DB_NAME 
@@ -78,14 +89,15 @@ importData() {
         --password $DB_PASS 
         --table $table 
         --target-dir $HDFS_PATH/imported_data/$table
-        --as-textfile --driver org.mariadb.jdbc.Driver
+        --as-textfile 
+        --driver org.mariadb.jdbc.Driver
     echo "Datos importados a HDFS desde la tabla '$table'en $HDFS_PATH/imported_data/$table."
 }
 
 importFilters() {
     read -p "Introduce el nombre de la tabla que deseas importar: " table
     read -p "Introduce las columnas (por ejemplo: id_usuario,nickname): " columns
-    read -p "Introduce la condición para filtrar los datos (por ejemplo, 'id > 10'): " condition
+    read -p "Introduce la condición para filtrar los datos (por ejemplo, 'id_usuario > 5'): " condition
     echo "Importando datos de la tabla '$table' a HDFS con la condición '$condition'..."
     sqoop import --connect jdbc:mariadb://$DB_HOST:$DB_PORT/$DB_NAME 
         --username $DB_USER 
@@ -109,9 +121,7 @@ importAvro() {
         --as-avrodatafile 
         --target-dir $HDFS_PATH/avro_data/$table
         --driver org.mariadb.jdbc.Driver
-    echo "Datos de la tabla '$table' importados en formato Avro."
-    echo "Leyendo datos en formato Avro en Hadoop..."
-    hadoop jar /path/to/avro-tools.jar tojson $HDFS_PATH/avro_data/$table
+    echo "Datos de la tabla '$table' importados en formato Avro en $HDFS_PATH/avro_data/$table."
 }
 
 importParquet() {
@@ -123,9 +133,7 @@ importParquet() {
         --table $table 
         --as-parquetfile 
         --target-dir $HDFS_PATH/parquet_data/$table
-    echo "Datos de la tabla '$table' importados en formato Parquet."
-    echo "Leyendo datos en formato Parquet en Hadoop..."
-    hadoop fs -cat $HDFS_PATH/$table
+    echo "Datos de la tabla '$table' importados en formato Parquet en $HDFS_PATH/parquet_data/$table."
 }
 
 importSnappy() {
@@ -138,8 +146,8 @@ importSnappy() {
     --as-textfile 
     --compression-codec org.apache.hadoop.io.compress.SnappyCodec
     --driver org.mariadb.jdbc.Driver
-    --target-dir $HDFS_PATH/$table
-    echo "Datos comprimidos con Snappy de la tabla '$table' importados."
+    --target-dir $HDFS_PATH/snapy_data/$table
+    echo "Datos comprimidos con Snappy de la tabla '$table' importados en $HDFS_PATH/snapy_data/$table."
 }
 
 importHive() {
@@ -190,7 +198,7 @@ case $1 in
         createDB
         ;;
     -importData)
-	importData
+	    importData
 	;;
     -loadData)
         loadData
