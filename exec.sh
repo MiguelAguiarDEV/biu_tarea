@@ -7,7 +7,7 @@ DB_HOST="192.168.216.120"
 DB_PORT="3306"
 DB_NAME="moviebind"
 VENV_DIR=".venv"
-HDFS_PATH="/user/hadoop/data"
+HDFS_PATH="/user/hadoop/text_data"
 
 # Exportar las variables como entorno para el script Python
 export DB_USER
@@ -78,6 +78,10 @@ importFilters() {
     read -p "Introduce el nombre de la tabla que deseas importar: " table
     read -p "Introduce las columnas (por ejemplo: id_usuario,nickname): " columns
     read -p "Introduce la condición para filtrar los datos (por ejemplo, 'id_usuario > 5'): " condition
+    if [[ -z "$condition" ]]; then
+        echo "La condición de filtro no puede estar vacía. Inténtalo de nuevo."
+        exit 1
+    fi
     echo "Importando datos de la tabla '$table' a HDFS con la condición '$condition'..."
     sqoop import --connect jdbc:mariadb://$DB_HOST:$DB_PORT/$DB_NAME \
         --username $DB_USER \
@@ -94,7 +98,7 @@ importFilters() {
 importAvro() {
     read -p "Introduce el nombre de la tabla que deseas importar en formato Avro: " table
     echo "Importando datos de la tabla '$table' a HDFS en formato Avro..."
-    sqoop import --connect jdbc:mysql://$DB_HOST:$DB_PORT/$DB_NAME \
+    sqoop import --connect jdbc:mariadb://$DB_HOST:$DB_PORT/$DB_NAME \
         --username $DB_USER \
         --password $DB_PASS \
         --table $table \
@@ -107,7 +111,7 @@ importAvro() {
 importParquet() {
     read -p "Introduce el nombre de la tabla que deseas importar en formato Parquet: " table
     echo "Importando datos de la tabla '$table' a HDFS en formato Parquet..."
-    sqoop import --connect jdbc:mysql://$DB_HOST:$DB_PORT/$DB_NAME \
+    sqoop import --connect jdbc:mariadb://$DB_HOST:$DB_PORT/$DB_NAME \
         --username $DB_USER \
         --password $DB_PASS \
         --table $table \
@@ -119,38 +123,40 @@ importParquet() {
 importSnappy() {
     read -p "Introduce el nombre de la tabla que deseas importar en formato comprimido con Snappy: " table
     echo "Importando datos de la tabla '$table' a HDFS en formato comprimido con Snappy..."
-    sqoop import --connect jdbc:mysql://$DB_HOST:$DB_PORT/$DB_NAME \
+    sqoop import --connect jdbc:mariadb://$DB_HOST:$DB_PORT/$DB_NAME \
         --username $DB_USER \
         --password $DB_PASS \
         --table $table \
         --as-textfile \
+        --target-dir $HDFS_PATH/snapy_data/$table \
         --compression-codec org.apache.hadoop.io.compress.SnappyCodec \
         --driver org.mariadb.jdbc.Driver \
-        --target-dir $HDFS_PATH/snapy_data/$table
     echo "Datos comprimidos con Snappy de la tabla '$table' importados en $HDFS_PATH/snapy_data/$table."
 }
 
 importHive() {
     read -p "Introduce el nombre de la tabla que deseas importar en Hive: " table
     echo "Importando datos de la tabla '$table' a HDFS para Apache Hive..."
-    sqoop import --connect jdbc:mysql://$DB_HOST:$DB_PORT/$DB_NAME \
+    sqoop import --connect jdbc:mariadb://$DB_HOST:$DB_PORT/$DB_NAME \
         --username $DB_USER \
         --password $DB_PASS \
         --table $table \
-        --hive-import \
-        --create-hive-table \
-        --hive-table $table
+        --target-dir /user/hadoop/avro_data_snp/$table \
+        --as-avrodatafile \
+        --compression-codec org.apache.hadoop.io.compress.SnappyCodec \
+        --driver org.mariadb.jdbc.Driver \
     echo "Datos importados a Hive desde la tabla '$table'."
 }
 
 exportData() {
     read -p "Introduce el nombre de la tabla que deseas exportar desde HDFS a MariaDB: " table
     echo "Exportando datos desde HDFS a la tabla '$table' en MariaDB..."
-    sqoop export --connect jdbc:mysql://$DB_HOST:$DB_PORT/$DB_NAME \
+    sqoop export --connect jdbc:mariadb://$DB_HOST:$DB_PORT/$DB_NAME \
         --username $DB_USER \
         --password $DB_PASS \
         --table $table \
-        --export-dir $HDFS_PATH/$table
+        --export-dir $HDFS_PATH/$table \
+        --driver org.mariadb.jdbc.Driver
     echo "Datos exportados a la tabla '$table' en MariaDB."
 }
 
@@ -158,13 +164,11 @@ exportTables() {
     for table in $(cat tablas.txt); do
         echo "Exportando tabla: $table"
         sqoop export \
-            --connect jdbc:mysql://$DB_HOST:$DB_PORT/$DB_NAME \
+            --connect jdbc:mariadb://$DB_HOST:$DB_PORT/$DB_NAME \
             --username $DB_USER \
             --password $DB_PASS \
             --table $table \
             --export-dir /user/hadoop/text_data/$table \
-            --input-fields-terminated-by ',' \
-            --input-lines-terminated-by '\n' \
             --driver org.mariadb.jdbc.Driver
     done
 }
@@ -173,7 +177,7 @@ importTables() {
     for table in $(cat tablas.txt); do
         echo "Importando tabla: $table"
         sqoop import \
-            --connect jdbc:mysql://$DB_HOST:$DB_PORT/$DB_NAME \
+            --connect jdbc:mariadb://$DB_HOST:$DB_PORT/$DB_NAME \
             --username $DB_USER \
             --password $DB_PASS \
             --table $table \
