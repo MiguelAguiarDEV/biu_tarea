@@ -52,11 +52,11 @@ testDB() {
     # Conectar a la base de datos
     mariadb -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASS -e "USE $DB_NAME;"
 
-    # Verifica si la conexión fue exitosa
+    # Comprobar el código de salida
     if [ $? -eq 0 ]; then
-        echo "Conexión exitosa a la base de datos '$database' en $host:$port"
+        echo "Conexión exitosa a la base de datos."
     else
-        echo "Error al conectar a la base de datos '$database' en $host:$port"
+        echo "Error al conectar a la base de datos."
     fi
 }
 
