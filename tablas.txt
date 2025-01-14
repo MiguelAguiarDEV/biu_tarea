@@ -5,3 +5,5 @@ Peliculas
 Pelicula_Generos
 PalabrasClave
 Pelicula_PalabrasClave
+Contratos
+Visualizaciones
