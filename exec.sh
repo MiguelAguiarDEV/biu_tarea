@@ -131,7 +131,7 @@ importSnappy() {
         --as-textfile \
         --target-dir $HDFS_PATH/snapy_data/$table \
         --compression-codec org.apache.hadoop.io.compress.SnappyCodec \
-        --driver org.mariadb.jdbc.Driver \
+        --driver org.mariadb.jdbc.Driver 
     echo "Datos comprimidos con Snappy de la tabla '$table' importados en $HDFS_PATH/snapy_data/$table."
 }
 
@@ -145,7 +145,7 @@ importHive() {
         --target-dir /user/hadoop/avro_data_snp/$table \
         --as-avrodatafile \
         --compression-codec org.apache.hadoop.io.compress.SnappyCodec \
-        --driver org.mariadb.jdbc.Driver \
+        --driver org.mariadb.jdbc.Driver 
     echo "Datos importados a Hive desde la tabla '$table'."
 }
 
