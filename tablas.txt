@@ -1,0 +1,7 @@
+Usuarios
+Perfiles
+Generos
+Peliculas
+Pelicula_Generos
+PalabrasClave
+Pelicula_PalabrasClave
