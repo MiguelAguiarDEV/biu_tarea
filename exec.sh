@@ -162,6 +162,13 @@ exportData() {
 }
 
 exportTables() {
+
+    for table in $(cat tablas.txt); do
+        mariadb -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASS \
+            -e "use databse $DB_NAME;drop table $table;"
+    done
+}
+
     for table in $(cat tablas.txt); do
         echo "Exportando tabla: $table"
         sqoop export \
