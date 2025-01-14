@@ -116,7 +116,8 @@ importParquet() {
         --password $DB_PASS \
         --table $table \
         --as-parquetfile \
-        --target-dir $HDFS_PATH/parquet_data/$table
+        --target-dir $HDFS_PATH/parquet_data/$table \
+        --driver org.mariadb.jdbc.Driver
     echo "Datos de la tabla '$table' importados en formato Parquet en $HDFS_PATH/parquet_data/$table."
 }
 
