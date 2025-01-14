@@ -142,11 +142,11 @@ importHive() {
         --username $DB_USER \
         --password $DB_PASS \
         --table $table \
-        --target-dir /user/hadoop/avro_data_snp/$table \
+        --target-dir $HDFS_PATH/hive_data/$table \
         --as-avrodatafile \
         --compression-codec org.apache.hadoop.io.compress.SnappyCodec \
         --driver org.mariadb.jdbc.Driver 
-    echo "Datos importados a Hive desde la tabla '$table'."
+    echo "Datos importados a Hive desde la tabla '$table' importados en $HDFS_PATH/hive_data/$table."
 }
 
 exportData() {
