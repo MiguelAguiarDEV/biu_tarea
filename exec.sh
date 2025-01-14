@@ -183,14 +183,19 @@ exportTables() {
 
 importTables() {
     echo "Importando todas las tablas"
-    sqoop import-all-tables \
-    --connect jdbc:mariadb://$DB_HOST:$DB_PORT/$DB_NAME \
-    --username $DB_USER \
-    --password $DB_PASS \
-    --warehouse-dir /user/hadoop/text_data \
-    --as-textfile \
-    --driver org.mariadb.jdbc.Driver
+    for table in $(cat tablas.txt); do
+            sqoop import \
+            --connect jdbc:mariadb://$DB_HOST:$DB_PORT/$DB_NAME \
+            --username $DB_USER \
+            --password $DB_PASS \
+            --query "SELECT * FROM $table WHERE \$CONDITIONS" \
+            --target-dir $HDFS_PATH/$table \
+            --as-textfile \
+            --num-mappers 1 \
+            --driver org.mariadb.jdbc.Driver
+    done
 }
+
 
 # Parsear el flag proporcionado
 case $1 in
