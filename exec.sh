@@ -182,17 +182,13 @@ exportTables() {
 }
 
 importTables() {
-    for table in $(cat tablas.txt); do
-        echo "Importando tabla: $table"
-        sqoop import \
-            --connect jdbc:mariadb://$DB_HOST:$DB_PORT/$DB_NAME \
-            --username $DB_USER \
-            --password $DB_PASS \
-            --table $table \
-            --target-dir /user/hadoop/text_data/$table \
-            --as-textfile \
-            --driver org.mariadb.jdbc.Driver
-    done
+    sqoop import-all-tables \
+    --connect jdbc:mariadb://$DB_HOST:$DB_PORT/$DB_NAME \
+    --username $DB_USER \
+    --password $DB_PASS \
+    --warehouse-dir /user/hadoop/text_data \
+    --as-textfile \
+    --driver org.mariadb.jdbc.Driver
 }
 
 # Parsear el flag proporcionado
