@@ -182,6 +182,7 @@ exportTables() {
 }
 
 importTables() {
+    echo "Importando todas las tablas"
     sqoop import-all-tables \
     --connect jdbc:mariadb://$DB_HOST:$DB_PORT/$DB_NAME \
     --username $DB_USER \
