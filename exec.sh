@@ -4,10 +4,11 @@
 DB_USER="root"
 DB_PASS="root"
 DB_HOST="192.168.216.120"
-DB_PORT="3306"
+DB_PORT="3307"
 DB_NAME="moviebind"
 VENV_DIR=".venv"
 HDFS_PATH="/user/hadoop/text_data"
+TABLES_LIST="Usuarios Contratos PalabrasClave Pelicula_PalabrasClave Perfiles Visualizaciones Generos Pelicula_Generos Peliculas"
 
 # Exportar las variables como entorno para el script Python
 export DB_USER
@@ -204,12 +205,12 @@ export() {
     # Comentar o descomentar dependiendo de lo que diga Tony
     #deleteData()
 
-    for table in $(cat tablas.txt); do
+    for table in $TABLES_LIST; do
         mariadb -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASS \
-            -e "use databse $DB_NAME;drop table $table;"
+            -e "use $DB_NAME;truncate table $table;"
     done
 
-    for table in $(cat tablas.txt); do
+    for table in $TABLES_LIST; do
         echo "Exportando tabla: $table"
         sqoop export \
             --connect jdbc:mariadb://$DB_HOST:$DB_PORT/$DB_NAME \
@@ -224,7 +225,7 @@ export() {
 importTables() {
     echo "Importando todas las tablas"
     
-    for table in $(cat tablas.txt); do
+    for table in $TABLES_LIST; do
             sqoop import \
             --connect jdbc:mariadb://$DB_HOST:$DB_PORT/$DB_NAME \
             --username $DB_USER \
@@ -240,7 +241,7 @@ importTables() {
 }
 
 deleteData() {
-    for table in $(cat tablas.txt); do
+    for table in $TABLES_LIST; do
         mariadb -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASS \
             -e "use databse $DB_NAME;TRUNCATE TABLE $table;;"
     done
@@ -301,7 +302,7 @@ case $1 in
         importHive
         ;;
     -export)
-        exportData
+        export
         ;;
     -importTables)
         importTables
