@@ -17,9 +17,51 @@ export DB_PORT
 export DB_NAME
 
 # Funciones para cada operación
-setupEnv() {
-    echo "Configurando el entorno virtual..."
+init() {
+    # Comprueba e instala Python3, pip y venv si es necesario
 
+    # Comprueba si apt-get está disponible
+    echo "Comprobando si apt-get está disponible..."
+    if ! command -v apt-get &> /dev/null; then
+        echo "Este script requiere apt-get para instalar paquetes. Por favor, usa una distribución basada en Debian."
+        exit 1
+    else
+        echo "apt-get está disponible."
+    fi
+
+    # Comprueba e instala Python3
+    echo "Comprobando si Python3 está instalado..."
+    if ! command -v python3 &> /dev/null; then
+        echo "Python3 no está instalado. Instalando Python3..."
+        sudo apt-get update
+        sudo apt-get install -y python3
+    else
+        echo "Python3 ya está instalado."
+    fi
+
+    # Comprueba e instala pip
+    echo "Comprobando si pip está instalado..."
+    if ! command -v pip &> /dev/null; then
+        echo "pip no está instalado. Instalando pip..."
+        sudo apt-get update
+        sudo apt-get install -y python3-pip
+    else
+        echo "pip ya está instalado."
+    fi
+
+    # Comprueba e instala venv
+    echo "Comprobando si venv está instalado..."
+    if ! python3 -m venv --help &> /dev/null; then
+        echo "venv no está instalado. Instalando venv..."
+        sudo apt-get update
+        sudo apt-get install -y python3-venv
+    else
+        echo "venv ya está instalado."
+    fi
+
+    # Crea y configura el entorno virtual
+
+    echo "Configurando el entorno virtual..."
     # Crear el entorno virtual si no existe
     if [ ! -d "$VENV_DIR" ]; then
         echo "Creando el entorno virtual..."
@@ -29,8 +71,15 @@ setupEnv() {
     fi
 
     # Activar el entorno virtual
+    echo "Activando el entorno virtual..."
     source $VENV_DIR/bin/activate
-
+    if [ $? -eq 0 ]; then
+        echo "Entorno virtual activado."
+    else
+        echo "Hubo un error al activar el entorno virtual."
+        exit 1
+    fi
+    
     # Instalar las dependencias
     if [ -f "requirements.txt" ]; then
         echo "Instalando dependencias desde requirements.txt..."
@@ -40,6 +89,8 @@ setupEnv() {
     fi
 
     echo "Entorno virtual configurado."
+
+    echo "Uso: $0 {-init|-createDB|-loadData|-deleteDB|-import|-importFilters|-importAvro|-importParquet|-importSnappy|-importHive|-export|-importTables}"
 }
 
 createDB() {
@@ -149,25 +200,14 @@ importHive() {
     echo "Datos importados a Hive desde la tabla '$table' importados en $HDFS_PATH/hive_data/$table."
 }
 
-exportData() {
-    read -p "Introduce el nombre de la tabla que deseas exportar desde HDFS a MariaDB: " table
-    echo "Exportando datos desde HDFS a la tabla '$table' en MariaDB..."
-    sqoop export --connect jdbc:mariadb://$DB_HOST:$DB_PORT/$DB_NAME \
-        --username $DB_USER \
-        --password $DB_PASS \
-        --table $table \
-        --export-dir $HDFS_PATH/$table \
-        --driver org.mariadb.jdbc.Driver
-    echo "Datos exportados a la tabla '$table' en MariaDB."
-}
-
-exportTables() {
+export() {
+    # Comentar o descomentar dependiendo de lo que diga Tony
+    #deleteData()
 
     for table in $(cat tablas.txt); do
         mariadb -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASS \
             -e "use databse $DB_NAME;drop table $table;"
     done
-}
 
     for table in $(cat tablas.txt); do
         echo "Exportando tabla: $table"
@@ -176,43 +216,74 @@ exportTables() {
             --username $DB_USER \
             --password $DB_PASS \
             --table $table \
-            --export-dir /user/hadoop/text_data/$table \
+            --export-dir $HDFS_PATH/allTables/$table \
             --driver org.mariadb.jdbc.Driver
     done
 }
 
 importTables() {
     echo "Importando todas las tablas"
+    
     for table in $(cat tablas.txt); do
             sqoop import \
             --connect jdbc:mariadb://$DB_HOST:$DB_PORT/$DB_NAME \
             --username $DB_USER \
             --password $DB_PASS \
             --query "SELECT * FROM $table WHERE \$CONDITIONS" \
-            --target-dir $HDFS_PATH/$table \
+            --target-dir $HDFS_PATH/allTables/$table \
             --as-textfile \
             --num-mappers 1 \
             --driver org.mariadb.jdbc.Driver
     done
+
+    echo "Tablas importadas en $HDFS_PATH/allTables/"
+}
+
+deleteData() {
+    for table in $(cat tablas.txt); do
+        mariadb -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASS \
+            -e "use databse $DB_NAME;TRUNCATE TABLE $table;;"
+    done
 }
 
 
+help(){
+    echo "Script de Gestión de Base de Datos y HDFS con Sqoop"
+    echo "Uso: $0 {opción}"
+    echo "Opciones disponibles:"
+    echo "  -help             Muestra este mensaje de ayuda."
+    echo "  -init             Configura el entorno inicial para el script (si es necesario)."
+    echo "  -createDB         Crea la base de datos utilizando el archivo SQL especificado."
+    echo "  -loadData         Carga datos iniciales en la base de datos desde un script Python que genera datos aleatorios."
+    echo "  -deleteDB         Borra la base de datos y todas sus tablas."
+    echo "  -import           Importa datos desde una tabla específica de la base de datos a HDFS."
+    echo "  -importFilters    Importa datos desde una tabla aplicando filtros definidos por el usuario."
+    echo "  -importAvro       Importa datos desde una tabla en formato Avro hacia HDFS."
+    echo "  -importParquet    Importa datos desde una tabla en formato Parquet hacia HDFS."
+    echo "  -importSnappy     Importa datos comprimidos con Snappy desde una tabla hacia HDFS."
+    echo "  -importHive       Importa datos desde una tabla para ser utilizados con Apache Hive."
+    echo "  -export           Exporta datos desde HDFS hacia tablas de la base de datos."
+    echo "  -importTables     Importa todas las tablas listadas en un archivo hacia HDFS."
+    echo "  -deleteData       Borra todos los datos de las tablas listadas en un archivo."
+    echo ""
+}
+
 # Parsear el flag proporcionado
 case $1 in
-    -setupEnv)
-        setupEnv
+    -init)
+        init
         ;;
     -createDB)
         createDB
-        ;;
-    -import)
-        import
         ;;
     -loadData)
         loadData
         ;;
     -deleteDB)
         deleteDB
+        ;;
+    -import)
+        import
         ;;
     -importFilters)
         importFilters
@@ -232,8 +303,17 @@ case $1 in
     -export)
         exportData
         ;;
+    -importTables)
+        importTables
+        ;;
+    -deleteData)
+        deleteData
+        ;;
+    -help)
+        help
+        ;;
     *)
-        echo "Uso: $0 {-setupEnv|-createDB|-loadData|-deleteDB|-import|-importFilters|-importAvro|-importParquet|-importSnappy|-importHive|-export}"
+        echo "Uso: $0 {-help|-init|-createDB|-loadData|-deleteDB|-import|-importFilters|-importAvro|-importParquet|-importSnappy|-importHive|-export|-importTables|-deleteData}"
         exit 1
         ;;
 esac
