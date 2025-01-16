@@ -246,7 +246,7 @@ importTables() {
 deleteData() {
     for table in $TABLES_LIST; do
         mariadb -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASS \
-            -e "use $DB_NAME;TRUNCATE TABLE $table;;"
+            -e "use $DB_NAME;TRUNCATE TABLE $table;"
     done
 }
 
