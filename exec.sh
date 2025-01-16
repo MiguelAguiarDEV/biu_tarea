@@ -210,7 +210,7 @@ export() {
             -e "use $DB_NAME;truncate table $table;"
     done
 
-    for table in $TABLES_LIST; do
+   for table in $TABLES_LIST; do
         echo "Exportando tabla: $table"
         sqoop export \
             --connect jdbc:mariadb://$DB_HOST:$DB_PORT/$DB_NAME \
@@ -218,8 +218,11 @@ export() {
             --password $DB_PASS \
             --table $table \
             --export-dir $HDFS_PATH/allTables/$table \
+            --input-fields-terminated-by ',' \
+            --input-lines-terminated-by '\n' \
             --driver org.mariadb.jdbc.Driver
     done
+
 }
 
 importTables() {
@@ -243,7 +246,7 @@ importTables() {
 deleteData() {
     for table in $TABLES_LIST; do
         mariadb -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASS \
-            -e "use databse $DB_NAME;TRUNCATE TABLE $table;;"
+            -e "use $DB_NAME;TRUNCATE TABLE $table;;"
     done
 }
 
